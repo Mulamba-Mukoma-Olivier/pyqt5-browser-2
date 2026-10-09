@@ -94,28 +94,43 @@ def load_wifi_credentials():
 
 
 def get_network_name():
-    try:
-        result = subprocess.check_output(
-            ["iwgetid", "-r"],
-            stderr=subprocess.DEVNULL,
-            text=True,
-        ).strip()
-        if result:
-            return result
-    except Exception:
-        pass
+    system = platform.system()
+    if system == "Linux":
+        try:
+            result = subprocess.check_output(
+                ["iwgetid", "-r"],
+                stderr=subprocess.DEVNULL,
+                text=True,
+            ).strip()
+            if result:
+                return result
+        except Exception:
+            pass
 
-    try:
-        output = subprocess.check_output(
-            ["nmcli", "-t", "-f", "active,ssid", "dev", "wifi"],
-            stderr=subprocess.DEVNULL,
-            text=True,
-        )
-        for line in output.splitlines():
-            if line.startswith("yes:"):
-                return line.split(":", 1)[1].strip()
-    except Exception:
-        pass
+        try:
+            output = subprocess.check_output(
+                ["nmcli", "-t", "-f", "active,ssid", "dev", "wifi"],
+                stderr=subprocess.DEVNULL,
+                text=True,
+            )
+            for line in output.splitlines():
+                if line.startswith("yes:"):
+                    return line.split(":", 1)[1].strip()
+        except Exception:
+            pass
+
+    elif system == "Windows":
+        try:
+            output = subprocess.check_output(["netsh", "wlan", "show", "interfaces"], stderr=subprocess.DEVNULL, text=True)
+            for line in output.splitlines():
+                if "SSID" in line and ":" in line:
+                    parts = line.split(":", 1)
+                    if len(parts) == 2:
+                        name = parts[1].strip()
+                        if name:
+                            return name
+        except Exception:
+            pass
 
     return "Inconnu"
 
